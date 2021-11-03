@@ -1,8 +1,3 @@
-/*********
-  Rui Santos
-  Complete project details at https://RandomNerdTutorials.com/vs-code-platformio-ide-esp32-esp8266-arduino/
-*********/
-
 #include <Arduino.h>
 #include <SoftwareSerial.h>
 #include <DFRobotDFPlayerMini.h>
@@ -23,19 +18,23 @@
 
 struct Button {
     const uint8_t PIN;
+    uint32_t lastDebounceTime;
     bool pressed;
 };
 
-Button buttonPause = {PIN_PAUSE, false};
-Button play = {PIN_PLAY, false};
-Button previous = {PIN_PREVIOUS, false};
-Button next = {PIN_NEXT, false};
-Button actionneur1 = {PIN_ACTIONNEUR1, false};
-Button actionneur2 = {PIN_ACTIONNEUR2, false};
+Button buttonPause = {PIN_PAUSE, 0, false};
+Button play = {PIN_PLAY, 0, false};
+Button previous = {PIN_PREVIOUS, 0, false};
+Button next = {PIN_NEXT, 0, false};
+Button actionneur1 = {PIN_ACTIONNEUR1, 0, false};
+Button actionneur2 = {PIN_ACTIONNEUR2, 0, false};
 
 SoftwareSerial mySoftwareSerial(PIN_DFPLAYER_RX, PIN_DFPLAYER_TX);
 DFRobotDFPlayerMini myDFPlayer ;
 
+const uint32_t debounceDelay = 500;
+
+boolean isDebounce();
 void printDetail(uint8_t type, int value);
 static unsigned long timer = millis();
 
@@ -133,46 +132,66 @@ void setup() {
 void loop() {
   
   if(buttonPause.pressed){
-    printLine("Button Pause pressed");
-    printLine("State: ", myDFPlayer.readState()); //read mp3 state
-    if(myDFPlayer.readState() == 1){ //Playing
-      myDFPlayer.pause();
-    }else{
-      myDFPlayer.start();
+    if(millis() - buttonPause.lastDebounceTime > debounceDelay){
+      printLine("Button Pause pressed");
+      printLine("State: ", myDFPlayer.readState()); //read mp3 state
+      if(myDFPlayer.readState() == 1){ //Playing
+        myDFPlayer.pause();
+      }else{
+        myDFPlayer.start();
+      }
+      buttonPause.lastDebounceTime = millis();
     }
     buttonPause.pressed = false;
   }
   if(play.pressed){
-    printLine("Button Play pressed");
-    myDFPlayer.play();
+    if(millis() - play.lastDebounceTime > debounceDelay){
+      printLine("Button Play pressed");
+      myDFPlayer.play();
+      play.lastDebounceTime = millis();
+    }
     play.pressed = false;
   }
   if(previous.pressed){
-    printLine("Button Previous pressed");
-    myDFPlayer.previous();
+    if(millis() - previous.lastDebounceTime > debounceDelay){
+      printLine("Button Previous pressed");
+      myDFPlayer.previous();
+      previous.lastDebounceTime = millis();
+    }
     previous.pressed = false;
   }
   if(next.pressed){
-    printLine("Button Next pressed");
-    myDFPlayer.next();
+    if(millis() - next.lastDebounceTime > debounceDelay){
+      printLine("Button Next pressed");
+      myDFPlayer.next();
+      next.lastDebounceTime = millis();
+    }
     next.pressed = false;
   }
   if(actionneur1.pressed){
-    printLine("Button Actionneur1 pressed");
-    index_color = (index_color + 1) % 3; //change colors
-    for(int i=0; i<NUM_LEDS; i++) { // For each pixel in strip...
+
+    if(millis() - actionneur1.lastDebounceTime > debounceDelay){
+      printLine("Button Actionneur1 pressed");
+      index_color = (index_color + 1) % 3; //change colors
+      for(int i=0; i<NUM_LEDS; i++) { // For each pixel in strip...
         ring1[i] = colors[index_color];
       } 
-    FastLED.show(); 
+      FastLED.show(); 
+      actionneur1.lastDebounceTime = millis(); //// reset the debouncing timer
+    }
     actionneur1.pressed = false;
   }
   if(actionneur2.pressed){
-    printLine("Button Actionneur2 pressed");
-    index_color = (index_color + 1) % 3; //change colors
-    for(int i=0; i<NUM_LEDS; i++) { // For each pixel in strip...
-        ring2[i] = colors[index_color];
-      } 
-    FastLED.show(); 
+    
+    if(millis() - actionneur2.lastDebounceTime > debounceDelay){
+      printLine("Button Actionneur2 pressed");
+      index_color = (index_color + 1) % 3; //change colors
+      for(int i=0; i<NUM_LEDS; i++) { // For each pixel in strip...
+          ring2[i] = colors[index_color];
+        } 
+      FastLED.show();
+      actionneur2.lastDebounceTime = millis(); //// reset the debouncing timer
+    }
     actionneur2.pressed = false;
   }
 
