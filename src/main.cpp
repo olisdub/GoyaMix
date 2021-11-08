@@ -33,10 +33,11 @@ SoftwareSerial mySoftwareSerial(PIN_DFPLAYER_RX, PIN_DFPLAYER_TX);
 DFRobotDFPlayerMini myDFPlayer ;
 
 const uint32_t debounceDelay = 500;
+static unsigned long timer = millis();
 
 boolean isDebounce();
 void printDetail(uint8_t type, int value);
-static unsigned long timer = millis();
+void setRingColor(CRGB* ring, int num_leds, CRGB color);
 
 CRGB ring1[NUM_LEDS];
 CRGB ring2[NUM_LEDS];
@@ -172,11 +173,10 @@ void loop() {
 
     if(millis() - actionneur1.lastDebounceTime > debounceDelay){
       printLine("Button Actionneur1 pressed");
-      index_color = (index_color + 1) % 3; //change colors
-      for(int i=0; i<NUM_LEDS; i++) { // For each pixel in strip...
-        ring1[i] = colors[index_color];
-      } 
-      FastLED.show(); 
+      // index_color = (index_color + 1) % 3; //change colors
+      // setRingColor(ring1, NUM_LEDS, colors[index_color]);
+      setRingColor(ring1, NUM_LEDS, CRGB::Green);
+      myDFPlayer.playFolder(2,1); //play oui
       actionneur1.lastDebounceTime = millis(); //// reset the debouncing timer
     }
     actionneur1.pressed = false;
@@ -185,22 +185,25 @@ void loop() {
     
     if(millis() - actionneur2.lastDebounceTime > debounceDelay){
       printLine("Button Actionneur2 pressed");
-      index_color = (index_color + 1) % 3; //change colors
-      for(int i=0; i<NUM_LEDS; i++) { // For each pixel in strip...
-          ring2[i] = colors[index_color];
-        } 
-      FastLED.show();
+      // index_color = (index_color + 1) % 3; //change colors
+      // setRingColor(ring2, NUM_LEDS, colors[index_color]);
+      setRingColor(ring2, NUM_LEDS, CRGB::Red);
+      myDFPlayer.playFolder(2,2); //play non
+      /* for(int i=0; i<NUM_LEDS; i++) { // For each pixel in strip...
+        ring2[i] = colors[index_color];
+      } 
+      FastLED.show(); */
       actionneur2.lastDebounceTime = millis(); //// reset the debouncing timer
     }
     actionneur2.pressed = false;
   }
 
- if (millis() - timer > 1000) { 
+/*  if (millis() - timer > 1000) { 
     //DO SOME PERIODIC TASKS
     fill_rainbow( ringBox, NUM_LEDS, 250, 7);
     FastLED.show();
     timer = millis();
-  }
+  } */
   
   if (myDFPlayer.available()) {
     printDetail(myDFPlayer.readType(), myDFPlayer.read()); //Print the detail message from DFPlayer to handle different errors and states.
@@ -208,6 +211,12 @@ void loop() {
 
 }
 
+void setRingColor(CRGB ring[], int num_leds, CRGB color){
+  for(int i=0; i<num_leds; i++) { // For each pixel in strip...
+    ring[i] = color;
+  }
+  FastLED.show();
+}
 void printDetail(uint8_t type, int value){
   switch (type) {
     case TimeOut:
